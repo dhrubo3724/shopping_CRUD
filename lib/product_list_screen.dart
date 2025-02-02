@@ -17,7 +17,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         title: Text("Product List"),
       ),
       body: ListView.separated(
-        itemCount: 10,
+        itemCount: 5,
         itemBuilder: (context, int index) {
           return buildProductList();
         },
