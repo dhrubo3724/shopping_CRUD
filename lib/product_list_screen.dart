@@ -35,7 +35,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  ListTile buildProductList() {
+  Widget buildProductList() {
     return ListTile(
       leading: Image.asset(
         'assets/images/shoes.png',

@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 
 class ProductAddFrom extends StatefulWidget {
   const ProductAddFrom({super.key});
@@ -13,6 +16,8 @@ class _ProductAddFromState extends State<ProductAddFrom> {
   final TextEditingController _quantityTEController = TextEditingController();
   final TextEditingController _totalPTEController = TextEditingController();
   final TextEditingController _imageTEController = TextEditingController();
+
+  bool _addButtoninProgess = false;
 
   final GlobalKey<FormState> _fromKey = GlobalKey<FormState>();
   @override
@@ -112,12 +117,20 @@ class _ProductAddFromState extends State<ProductAddFrom> {
                 SizedBox(
                   height: 16,
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(),
-                  onPressed: () {
-                    if (_fromKey.currentState!.validate()) {}
-                  },
-                  child: Text('Add'),
+                Visibility(
+                  visible: _addButtoninProgess = false,
+                  replacement: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(),
+                    onPressed: () {
+                      if (_fromKey.currentState!.validate()) {
+                        _addProduct();
+                      }
+                    },
+                    child: Text('Add'),
+                  ),
                 )
               ],
             ),
@@ -126,6 +139,45 @@ class _ProductAddFromState extends State<ProductAddFrom> {
       ),
     );
   }
+
+//API intrigation
+//step:1 = set the url
+  Future<void> _addProduct() async {
+    _addButtoninProgess = true;
+    setState(() {});
+    const String addNewProduct = 'api link';
+    //step:2 = prepare data
+
+    Map<String, dynamic> inputData = {"Img": "sunffj"};
+
+    //step:3 =parse
+    Uri uri = Uri.parse(addNewProduct);
+    //step:4 = send request
+    Response response = await post(uri,
+        body: jsonEncode(inputData),
+        headers: {'content-type': 'application/json'});
+    print(response.statusCode);
+    print(response.body);
+    print(response.headers);
+    _addButtoninProgess = false;
+    setState(() {});
+
+    if (response.statusCode == 200) {
+      _nameTEController.clear();
+      _priceTEController.clear();
+      _quantityTEController.clear();
+      _imageTEController.clear();
+      _totalPTEController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("New Product Added")));
+    }
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Add new product failed!")))
+    }
+  }
+
+  //TODO:from clear
+  //TODO:Add button in progress
+  //TODO:toast add
 
   @override
   void dispose() {
