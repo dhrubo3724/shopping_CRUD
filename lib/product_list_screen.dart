@@ -54,6 +54,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _getProductList() async {
+    productList.clear();
     _ProductListInProgress = true;
     setState(() {});
     const String url = " //api Url";
