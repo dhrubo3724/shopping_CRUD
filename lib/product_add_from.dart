@@ -16,10 +16,10 @@ class _ProductAddFromState extends State<ProductAddFrom> {
   final TextEditingController _quantityTEController = TextEditingController();
   final TextEditingController _totalPTEController = TextEditingController();
   final TextEditingController _imageTEController = TextEditingController();
-
-  bool _addButtoninProgess = false;
-
   final GlobalKey<FormState> _fromKey = GlobalKey<FormState>();
+
+  bool addNewProductInProgress = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,12 +118,11 @@ class _ProductAddFromState extends State<ProductAddFrom> {
                   height: 16,
                 ),
                 Visibility(
-                  visible: _addButtoninProgess = false,
+                  visible: addNewProductInProgress == true,
                   replacement: Center(
                     child: CircularProgressIndicator(),
                   ),
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(),
                     onPressed: () {
                       if (_fromKey.currentState!.validate()) {
                         _addProduct();
@@ -143,7 +142,7 @@ class _ProductAddFromState extends State<ProductAddFrom> {
 //API intrigation
 //step:1 = set the url
   Future<void> _addProduct() async {
-    _addButtoninProgess = true;
+    addNewProductInProgress = true;
     setState(() {});
     const String addNewProduct = 'api link';
     //step:2 = prepare data
@@ -157,9 +156,11 @@ class _ProductAddFromState extends State<ProductAddFrom> {
         body: jsonEncode(inputData),
         headers: {'content-type': 'application/json'});
     print(response.statusCode);
+
     print(response.body);
     print(response.headers);
-    _addButtoninProgess = false;
+    addNewProductInProgress = false;
+
     setState(() {});
 
     if (response.statusCode == 200) {
@@ -168,10 +169,11 @@ class _ProductAddFromState extends State<ProductAddFrom> {
       _quantityTEController.clear();
       _imageTEController.clear();
       _totalPTEController.clear();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("New Product Added")));
-    }
-    else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Add new product failed!")))
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("New Product Added")));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Add new product failed!")));
     }
   }
 
