@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:shopping/product.dart';
 import 'package:shopping/product_add_from.dart';
 import 'package:shopping/product_update.dart';
 
@@ -13,7 +14,7 @@ class ProductListScreen extends StatefulWidget {
 }
 
 class _ProductListScreenState extends State<ProductListScreen> {
-  bool _ProductListInProgress = false;
+  bool _productListInProgress = false;
   List<Product> productList = [];
 
   @override
@@ -28,17 +29,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
       appBar: AppBar(
         title: Text("Product List"),
       ),
-      body: Visibility(
-        visible: _ProductListInProgress == false,
-        replacement: Center(
-          child: CircularProgressIndicator(),
-        ),
-        child: ListView.separated(
-          itemCount: productList.length,
-          itemBuilder: (context, int index) {
-            return buildProductList();
-          },
-          separatorBuilder: (_, __) => Divider(),
+      body: RefreshIndicator(
+        onRefresh: _getProductList,
+        child: Visibility(
+          visible: _productListInProgress == false,
+          replacement: Center(
+            child: CircularProgressIndicator(),
+          ),
+          child: ListView.separated(
+            itemCount: productList.length,
+            itemBuilder: (context, int index) {
+              return buildProductList(productList[index]);
+            },
+            separatorBuilder: (_, __) => Divider(),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -54,9 +58,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _getProductList() async {
-    productList.clear();
-    _ProductListInProgress = true;
+    _productListInProgress = true;
     setState(() {});
+    productList.clear();
     const String url = " //api Url";
     Uri uri = Uri.parse(url);
     Response response = await get(uri);
@@ -64,43 +68,61 @@ class _ProductListScreenState extends State<ProductListScreen> {
       //data decode
       final decodedData = jsonDecode(response.body);
       //get the list
-      List<Map<String, dynamic>> productList = decodedData['//from api data'];
+      final jsonProductList = decodedData['//from api data'];
 
       //Loop over the list
 
-      for (Map<String, dynamic> p in productList) {}
+      for (Map<String, dynamic> p in jsonProductList) {
+        Product product = Product(
+            productName: p['_productName' /* from api data*/] ?? '',
+            productCode: p['productCode'] ?? '',
+            image: p['image'] ?? '',
+            productPrice: p['productPrice'] ?? '',
+            productQuantity: p['productQuantity'] ?? '',
+            totalPrice: p['totalPrice'] ?? '');
+        productList.add(product);
+      }
+      _productListInProgress = false;
+      setState(() {});
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Add new product failed!")));
     }
   }
 
-  Widget buildProductList() {
+  Widget buildProductList(Product product) {
     return ListTile(
-      leading: Image.asset(
-        'assets/images/shoes.png',
-        height: 60,
-        width: 60,
-      ),
-      title: Text("Product Name"),
+      // leading: Image.asset(
+      //   'assets/images/shoes.png',
+      //   height: 60,
+      //   width: 60,
+      // ),
+      title: Text(product.productName),
       subtitle: Wrap(
         spacing: 16,
         children: [
-          Text("Unit Price:10"),
-          Text("Quantity:2"),
-          Text("Total price:100")
+          Text("Unit Price:${product.productPrice}"),
+          Text("Quantity:${product.productQuantity}"),
+          Text("Total price: ${product.totalPrice}")
         ],
       ),
       trailing: Wrap(
         children: [
           IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProductUpdate()),
-              );
-            },
             icon: Icon(Icons.edit),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductUpdate(
+                    product: product,
+                  ),
+                ),
+              );
+              if (result == true) {
+                _getProductList();
+              }
+            },
           ),
           IconButton(
               onPressed: () {
@@ -112,7 +134,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _showProductDeleteConfig() {
+  void _showProductDeleteConfig( String productID) {
     showDialog(
         context: context,
         builder: (context) {
@@ -128,6 +150,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
               TextButton(
                 onPressed: () {
+                  _deleteProduct,
                   Navigator.pop(context);
                 },
                 child: Text("Yes,Delete"),
@@ -136,21 +159,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
           );
         });
   }
-}
 
-class Product {
-  //api product data
+  Future<void> _deleteProduct(String productID) async {
+    _productListInProgress = true;
+    setState(() {});
+    String deleteUrl = "delete_api url /$productID";
+    Uri uri = Uri.parse(deleteUrl);
+    Response response = await get(uri);
+    if (response.statusCode == 200) {
+      _getProductList();
+    } else {
+      _productListInProgress = false;
+      setState(() {});
 
-  final String productName;
-  final String productCode;
-  final String image;
-  final String productPrice;
-  final String productQuantity;
-
-  Product(
-      {required this.productName,
-      required this.productCode,
-      required this.image,
-      required this.productPrice,
-      required this.productQuantity});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Delete product failed! try again "),
+        ),
+      );
+    }
+  }
 }

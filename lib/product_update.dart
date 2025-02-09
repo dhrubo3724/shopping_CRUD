@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:shopping/product.dart';
 
 class ProductUpdate extends StatefulWidget {
-  const ProductUpdate({super.key});
+  const ProductUpdate({super.key, required this.product});
+
+  final Product product;
 
   @override
   State<ProductUpdate> createState() => _ProductUpdateState();
@@ -13,8 +19,20 @@ class _ProductUpdateState extends State<ProductUpdate> {
   final TextEditingController _quantityTEController = TextEditingController();
   final TextEditingController _totalPTEController = TextEditingController();
   final TextEditingController _imageTEController = TextEditingController();
-
   final GlobalKey<FormState> _fromKey = GlobalKey<FormState>();
+
+  bool _productUpdateInProgress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameTEController.text = widget.product.productName;
+    _priceTEController.text = widget.product.productPrice;
+    _quantityTEController.text = widget.product.productQuantity;
+    _totalPTEController.text = widget.product.totalPrice;
+    _imageTEController.text = widget.product.image;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,12 +130,20 @@ class _ProductUpdateState extends State<ProductUpdate> {
                 SizedBox(
                   height: 16,
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(),
-                  onPressed: () {
-                    if (_fromKey.currentState!.validate()) {}
-                  },
-                  child: Text('Update'),
+                Visibility(
+                  visible: _productUpdateInProgress == false,
+                  replacement: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(),
+                    onPressed: () {
+                      if (_fromKey.currentState!.validate()) {
+                        _updateProduct();
+                      }
+                    },
+                    child: Text('Update'),
+                  ),
                 )
               ],
             ),
@@ -125,6 +151,29 @@ class _ProductUpdateState extends State<ProductUpdate> {
         ),
       ),
     );
+  }
+
+  Future<void> _updateProduct() async {
+    _productUpdateInProgress = true;
+
+    setState(() {});
+    Map<String, String> inputData = {
+      "img": _imageTEController.text,
+    };
+    String updateProductUrl = " url /${widget.product.productCode}";
+    Uri uri = Uri.parse(updateProductUrl);
+
+    Response response = await post(uri,
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode(inputData));
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Product updateded")));
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("update product failed!")));
+    }
   }
 
   @override
